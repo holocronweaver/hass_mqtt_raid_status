@@ -379,6 +379,7 @@ for device in config['devices']:
     unique_id = hashlib.sha256(res.stdout).hexdigest()[:12]
 
     raid_state = None
+    raid_healthy = None
     raid_level = None
     raid_device = device['raid_device'].split('/').pop()
 
@@ -396,12 +397,14 @@ for device in config['devices']:
                 raid_level = value.lower()
             elif key == 'state':
                 raid_state = value.capitalize()
+                raid_healthy = raid_state in ('Active', 'Clean')
 
     display_device_name = '%s %s %s' % (device_name.capitalize(), raid_level.capitalize(), device['raid_device'])
     unique_id_dev = unique_id + ('%02x' % number)
 
     topics['avty_t'] = config['hass']['availability_topic']
-    topics['stat_t'] = '%s/%s_%s_%s/state' % (config['hass']['base_topic'], device_name, raid_level, raid_device)
+    base_stat_t = '%s/%s_%s_%s' % (config['hass']['base_topic'], device_name, raid_level, raid_device)
+    topics['stat_t'] = base_stat_t + '/state'
 
     device_info['dev']['identifiers'] = [ '%s_%s_%s_%s' % (device_name, raid_level, raid_device, unique_id_dev) ]
     device_info['dev']['name'] = '%s_%s_dev_%s' % (device_name, raid_level, raid_device)
@@ -420,13 +423,20 @@ for device in config['devices']:
     device_state.update(extra_info)
     device_state.update(device_info)
 
+    number += 23
+    device_healthy = copy.deepcopy(device_state)
+    device_healthy['name'] += ' Healthy'
+    device_healthy['obj_id'] = object_id + '_healthy'
+    device_healthy['uniq_id'] = unique_id + ('%02x' % number)
+    device_healthy['stat_t'] = base_stat_t + '/healthy'
+
     # total space
     number += 23
     total_space = copy.deepcopy(device_state)
     total_space['name'] += ' Total Space'
     total_space['obj_id'] = object_id + '_total'
     total_space['uniq_id'] = unique_id + ('%02x' % number)
-    total_space['stat_t'] = '%s/%s_%s_%s/total' % (config['hass']['base_topic'], device_name, raid_level, raid_device)
+    total_space['stat_t'] = base_stat_t + '/total'
     total_space['unit_of_measurement'] = device['display_unit']
 
     # free space
@@ -435,7 +445,7 @@ for device in config['devices']:
     free_space['name'] += ' Free Space'
     free_space['obj_id'] = object_id + '_free'
     free_space['uniq_id'] = unique_id + ('%02x' % number)
-    free_space['stat_t'] = '%s/%s_%s_%s/free' % (config['hass']['base_topic'], device_name, raid_level, raid_device)
+    free_space['stat_t'] = base_stat_t + '/free'
     free_space['unit_of_measurement'] = device['display_unit']
 
     # used space percentage
@@ -444,7 +454,7 @@ for device in config['devices']:
     free_pct_space['name'] += ' Free Space Pct'
     free_pct_space['obj_id'] = object_id + '_free_pct'
     free_pct_space['uniq_id'] = unique_id + ('%02x' % number)
-    free_pct_space['stat_t'] = '%s/%s_%s_%s/free_pct' % (config['hass']['base_topic'], device_name, raid_level, raid_device)
+    free_pct_space['stat_t'] = base_stat_t + '/free_pct'
     free_pct_space['unit_of_measurement'] = '%'
 
     # used space
@@ -453,16 +463,17 @@ for device in config['devices']:
     used_space['name'] += ' Used Space'
     used_space['obj_id'] = object_id + '_used'
     used_space['uniq_id'] = unique_id + ('%02x' % number)
-    used_space['stat_t'] = '%s/%s_%s_%s/used' % (config['hass']['base_topic'], device_name, raid_level, raid_device)
+    used_space['stat_t'] = base_stat_t + '/used'
     used_space['unit_of_measurement'] = device['display_unit']
 
     # append State to name
     device_state['name'] = device_state['name'] + ' State'
 
     # send homeassistant config
-    verbose('state: %s\ndevice: %s\nraid device: %s\nmount point: %s\ndisplay unit: %s' % (raid_state, device_name, device['raid_device'], device['mount_point'], device['display_unit']))
+    verbose('state: %s\nhealthy: %s\ndevice: %s\nraid device: %s\nmount point: %s\ndisplay unit: %s' % (raid_state, raid_healthy, device_name, device['raid_device'], device['mount_point'], device['display_unit']))
 
     publish_config(client, 'state', device_state, object_id)
+    publish_config(client, 'healthy', device_healthy, object_id)
     publish_config(client, 'total_space', total_space, object_id)
     publish_config(client, 'free_space', free_space, object_id)
     publish_config(client, 'free_pct_space', free_pct_space, object_id)
@@ -490,6 +501,7 @@ def main_loop(client):
 
         verbose('---')
         publish(client, device_state['stat_t'], raid_state)
+        publish(client, device_healthy['stat_t'], 'on' if raid_state in ('Active', 'Clean') else 'off')
         publish(client, total_space['stat_t'], ('%%.%df' % device['display_decimal_places']) % (result.total * device['multiplier']))
         publish(client, used_space['stat_t'], ('%%.%df' % device['display_decimal_places']) % (result.used * device['multiplier']))
         publish(client, free_space['stat_t'], ('%%.%df' % device['display_decimal_places']) % (result.free * device['multiplier']))

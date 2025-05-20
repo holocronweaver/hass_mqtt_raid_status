@@ -215,7 +215,7 @@ if args.print:
     try:
         import pprint
         pprint.pprint(config, indent=1, sort_dicts=False)
-    except:
+    except Exception:
         print(config)
     exit(0)
 
@@ -520,7 +520,7 @@ while True:
             time.sleep(1)
             try:
                 state['current_delay'] -= 1 # TypeError if None
-            except:
+            except Exception:
                 break
     except KeyboardInterrupt:
         error('Aborted')

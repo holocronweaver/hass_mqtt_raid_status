@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#! /usr/bin/env python3
 
 import json
 import socket
@@ -17,8 +17,10 @@ import shutil
 parser = argparse.ArgumentParser(description="Check Raid Utility")
 parser.add_argument("-v", "--verbose", help="verbose output", action="store_true", default=False)
 parser.add_argument("-c", "--config", help="configuration file", default="config.json")
-parser.add_argument("-i", "--interval", help="interval to update the raid status in seconds", type=int, default=900)
-parser.add_argument("-p", "--print", help="print configuration and exit", action="store_true", default=False)
+parser.add_argument("-i", "--interval",
+                    help="interval to update the raid status in seconds", type=int, default=900)
+parser.add_argument("-p", "--print",
+                    help="print configuration and exit", action="store_true", default=False)
 
 args = parser.parse_args()
 VERBOSE = args.verbose
@@ -34,7 +36,7 @@ def error(msg, e=None):
     exit(1)
 
 def has_mqtt_username(username):
-    return username!=None and username!=''
+    return username is not None and username != ''
 
 def get_mqtt_username(username):
     if has_mqtt_username(username):
@@ -58,7 +60,7 @@ state = {
     'resend_online_status': False
 }
 client = None
-config_file = os.path.abspath(args.config);
+config_file = os.path.abspath(args.config)
 config = {
     'sys': {},
     'hass': {},
@@ -120,45 +122,45 @@ config_defaults = {
         'mdadm_version': None,
         'os_version': None
     }
-};
+}
 # merge default settings per key
 for (key, val) in config_defaults.items():
     if key not in config:
         config[key] = val
     else:
-        config[key] = dict(val | config[key]);
+        config[key] = dict(val | config[key])
 
 # resolve device name
-if config['sys']['device_name']=='$HOSTNAME':
+if config['sys']['device_name'] == '$HOSTNAME':
     config['sys']['device_name'] = socket.gethostname()
 device_name = config['sys']['device_name']
 
 # check if any devices have been configured
-if not isinstance(config['devices'], list) or len(config['devices'])==0:
+if not isinstance(config['devices'], list) or len(config['devices']) == 0:
     error('No devices configured')
 
 # apply config defaults per device and normalize values
 idx = 0
 for device in config['devices']:
     tmp = dict(default_device_config | device)
-    if not 'raid_device' in tmp:
+    if 'raid_device' not in tmp:
         raise Exception('raid_device missing for device #%u' % idx)
-    if not 'mount_point' in tmp:
+    if 'mount_point' not in tmp:
         raise Exception('mount_point missing for device #%u' % idx)
     try:
         psutil.disk_usage(tmp['mount_point'])
     except Exception as e:
         error('Cannot find mount point: %s' % tmp['mount_point'], e)
     unit = tmp['display_unit'].upper()
-    if unit=='B':
+    if unit == 'B':
         multiplier = 1
-    elif unit=='KB':
+    elif unit == 'KB':
         multiplier = 1024
-    elif unit=='MB':
+    elif unit == 'MB':
         multiplier = 1024 << 10
-    elif unit=='GB':
+    elif unit == 'GB':
         multiplier = 1024 << 20
-    elif unit=='TB':
+    elif unit == 'TB':
         multiplier = 1024 << 30
     else:
         raise Exception('Invalid unit %s for device %s' % (unit, tmp['raid_device']))
@@ -171,12 +173,12 @@ for device in config['devices']:
 
 # normalize qos
 qos = int(config['mqtt']['qos'])
-if not qos in(0, 1, 2):
+if qos not in(0, 1, 2):
     error('Invalid QoS value: %d' % qos)
 config['mqtt']['qos'] = qos
 
 # replace variables
-s = config['hass']['availability_topic'];
+s = config['hass']['availability_topic']
 s = s.replace('${base_topic}', config['hass']['base_topic'])
 s = s.replace('${device_name}', config['sys']['device_name'])
 config['hass']['availability_topic'] = s
@@ -265,9 +267,9 @@ def set_connected(connected):
     state['connected'] = connected
 
 def reset_main_loop_delay(delay = 2):
-    if delay<=0:
+    if delay <= 0:
         delay = None
-    if delay==state['current_delay']:
+    if delay == state['current_delay']:
         return
     verbose('reset main delay')
     state['current_delay'] = delay
@@ -277,14 +279,14 @@ def set_resend_online_status(resend):
 
 # set connection online
 def on_connect(client, userdata, flags, rc, *args):
-    if is_connected()==None:
+    if is_connected() is None:
         verbose('client terminated')
         return
-    if rc!=0:
+    if rc != 0:
         verbose('bad connection rc=%s' % str(rc))
         set_connected(False)
         return
-    if is_connected()==False:
+    if is_connected() == False:
         set_connected(True)
         set_resend_online_status(False)
         # subscribe to availability topic
@@ -298,7 +300,7 @@ def on_connect(client, userdata, flags, rc, *args):
 def on_disconnect(client, userdata, rc, *args):
     if is_connected():
         set_connected(False)
-        if rc==0:
+        if rc == 0:
             try:
                 publish_offline(client)
             except Exception as e:
@@ -307,9 +309,9 @@ def on_disconnect(client, userdata, rc, *args):
 # update online status on connection failures
 def on_message(client, userdata, message, *args):
     if is_connected():
-        if message.topic==config['hass']['availability_topic']:
+        if message.topic == config['hass']['availability_topic']:
             payload = message.payload.decode('utf-8')
-            if payload==get_online_status():
+            if payload == get_online_status():
                 set_resend_online_status(False)
             else:
                 set_resend_online_status(True)
@@ -386,13 +388,13 @@ for device in config['devices']:
         error('Error executing %d: %s' % (res.returncode, ' '.join(args)), None)
     for line in res.stdout.decode().split('\n'):
         args = line.strip().split(':', maxsplit=2)
-        if len(args)==2:
+        if len(args) == 2:
             name = args[0].strip()
             value = args[1].strip()
             key = name.lower().replace(' ', '_')
-            if key=='raid_level':
+            if key == 'raid_level':
                 raid_level = value.lower()
-            elif key=='state':
+            elif key == 'state':
                 raid_state = value.capitalize()
 
     display_device_name = '%s %s %s' % (device_name.capitalize(), raid_level.capitalize(), device['raid_device'])
@@ -476,11 +478,11 @@ def main_loop(client):
             error('Error executing %d: %s' % (res.returncode, ' '.join(args)), None)
         for line in res.stdout.decode().split('\n'):
             args = line.strip().split(':', maxsplit=2)
-            if len(args)==2:
+            if len(args) == 2:
                 name = args[0].strip()
                 value = args[1].strip()
                 key = name.lower().replace(' ', '_')
-                if key=='state':
+                if key == 'state':
                     raid_state = value.capitalize()
                     break
 

@@ -1,0 +1,10 @@
+[project]
+name = "hass-mqtt-raid-status"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.9"
+dependencies = [
+    "paho-mqtt==1.6.1",
+    "psutil==5.8.0",
+]

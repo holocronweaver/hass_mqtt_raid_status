@@ -1,0 +1,37 @@
+version = 1
+revision = 2
+requires-python = ">=3.9"
+
+[[package]]
+name = "hass-mqtt-raid-status"
+version = "0.1.0"
+source = { virtual = "." }
+dependencies = [
+    { name = "paho-mqtt" },
+    { name = "psutil" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "paho-mqtt", specifier = "==1.6.1" },
+    { name = "psutil", specifier = "==5.8.0" },
+]
+
+[[package]]
+name = "paho-mqtt"
+version = "1.6.1"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/f8/dd/4b75dcba025f8647bc9862ac17299e0d7d12d3beadbf026d8c8d74215c12/paho-mqtt-1.6.1.tar.gz", hash = "sha256:2a8291c81623aec00372b5a85558a372c747cbca8e9934dfe218638b8eefc26f", size = 99373, upload-time = "2021-10-21T10:33:59.864Z" }
+
+[[package]]
+name = "psutil"
+version = "5.8.0"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/e1/b0/7276de53321c12981717490516b7e612364f2cb372ee8901bd4a66a000d7/psutil-5.8.0.tar.gz", hash = "sha256:0c9ccb99ab76025f2f0bbecf341d4656e9c1351db8cc8a03ccd62e318ab4b5c6", size = 470886, upload-time = "2020-12-19T01:20:42.916Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/12/80/8d09c345f19af2b29a309f8f9284e3ba1ae1ebd9438419080c14630f743a/psutil-5.8.0-cp39-cp39-macosx_10_9_x86_64.whl", hash = "sha256:6323d5d845c2785efb20aded4726636546b26d3b577aded22492908f7c1bdda7", size = 236274, upload-time = "2020-12-19T01:20:29.615Z" },
+    { url = "https://files.pythonhosted.org/packages/b6/2f/118e23a8f4e59d2c4ffe03a921cc72f364966e25548dc6c5a3011a334dc5/psutil-5.8.0-cp39-cp39-manylinux2010_i686.whl", hash = "sha256:245b5509968ac0bd179287d91210cd3f37add77dad385ef238b275bad35fa1c4", size = 291032, upload-time = "2020-12-19T01:20:32.422Z" },
+    { url = "https://files.pythonhosted.org/packages/91/4d/033cc02ae3a47197d0ced818814e4bb8d9d29ebed4f1eb55badedec160f7/psutil-5.8.0-cp39-cp39-manylinux2010_x86_64.whl", hash = "sha256:90d4091c2d30ddd0a03e0b97e6a33a48628469b99585e2ad6bf21f17423b112b", size = 293491, upload-time = "2020-12-19T01:20:34.915Z" },
+    { url = "https://files.pythonhosted.org/packages/a7/13/7285b74e061da21dfc4f15c8307eb2da1d2137367502d6598f03f4a5b5e7/psutil-5.8.0-cp39-cp39-win32.whl", hash = "sha256:ea372bcc129394485824ae3e3ddabe67dc0b118d262c568b4d2602a7070afdb0", size = 241508, upload-time = "2020-12-19T01:20:37.527Z" },
+    { url = "https://files.pythonhosted.org/packages/21/71/33cb528381c443df1ee25cbb451da975421bddb5099b11e7f2eb3fc90d6d/psutil-5.8.0-cp39-cp39-win_amd64.whl", hash = "sha256:f4634b033faf0d968bb9220dd1c793b897ab7f1189956e1aa9eae752527127d3", size = 246139, upload-time = "2020-12-19T01:20:39.89Z" },
+]

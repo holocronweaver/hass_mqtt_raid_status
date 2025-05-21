@@ -4,12 +4,9 @@ Python script to monitor the RAID status provided by mdadm with home assistant a
 
 ## Changelog
 
-  - Option to execute mdadm as sudo
-  - Rewritten connection handler (last will, online status)
-  - Pass configuration file as argument
-  - Added MQTT username and password
-  - Default configuration built-in
-  - Updated systemd script
+- Containerize using Docker.
+- Add RAID health boolean sensor.
+- Migrate dependency management to `pyproject.toml` and `uv`.
 
 ## Sensors
 
@@ -45,6 +42,16 @@ Any RAID device `/dev/mdX` can be added (`raid_device`). The device must be moun
 Execute `check-raid.py -v` as `root`. `mdadm` requires root privileges to be executed. If run as sudo has been enabled, the current user must be able to execute `sudo mdadm` without a password
 
 ### Installation as Service
+
+#### Docker
+
+Modify `docker-compose.yaml` to provide the container access to your mount points and RAID devices, then build and start the container.
+
+```
+docker compose up --build
+```
+
+#### systemd
 
 Copy `hass_raid_status.service` to your systemd directory, modify the location of the python script and add any required services (for example mosquitto as dependency)
 
@@ -82,8 +89,8 @@ To trigger any alarm if the RAID fails, you can add an automation if the state o
 - Degraded mirrored RAID with missing drive `Clean,degraded`
 
 ## TODO
-- containerize
-- improve documentation
+- provide pre-built containers.
+- improve documentation.
 ### Add More Sensors
 Largely inspired by [HA_mdadm](https://github.com/LorenzoVasi/HA_mdadm).
 

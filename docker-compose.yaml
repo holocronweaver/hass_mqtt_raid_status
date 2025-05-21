@@ -1,0 +1,14 @@
+---
+services:
+  raid_status:
+    build:
+      context: .
+    privileged: true
+    network_mode: host
+    volumes:
+      - /media/NAS/1:/media/NAS/1
+      - /dev/md0:/dev/md0
+      # Path to config.json
+      - .:/config
+      - /proc:/proc
+    restart: unless-stopped

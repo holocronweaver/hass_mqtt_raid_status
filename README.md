@@ -1,6 +1,6 @@
-# MQTT linux raid monitoring with Home Assistant auto configuration
+# MQTT linux RAID monitoring with Home Assistant auto configuration
 
-Python script to monitor the raid status provided by mdadm with home assistant auto configuration
+Python script to monitor the RAID status provided by mdadm with home assistant auto configuration
 
 ## Changelog
 
@@ -13,9 +13,9 @@ Python script to monitor the raid status provided by mdadm with home assistant a
 
 ## Sensors
 
- - Raid status
+ - RAID status (from mdadm) and health (binary)
  - Last update timestamp
- - Total disk space (default in GB, can be configured)
+ - Total disk space (default in TB, can be configured)
  - Free disk space
  - Free disk space in percent
  - Used disk space
@@ -30,15 +30,15 @@ Python script to monitor the raid status provided by mdadm with home assistant a
 - psutil
 - mdadm, blkid, uname
 
-Python requirements can be installed with `pip3 install -r requirements.txt`
+Python requirements are installed when running with `uv`.
 
 ## Configuration
 
-Edit `config.json` to change or add your device name and raid devices
+Edit `config.json` to change or add your device name and RAID devices
 
-### Multiple Raid Devices
+### Multiple RAID Devices
 
-Any raid device `/dev/mdX` can be added (`raid_device`). The device must be mounted (`mount_point`) to gather file system information
+Any RAID device `/dev/mdX` can be added (`raid_device`). The device must be mounted (`mount_point`) to gather file system information
 
 ### Testing the Configuration
 
@@ -49,8 +49,7 @@ Execute `check-raid.py -v` as `root`. `mdadm` requires root privileges to be exe
 Copy `hass_raid_status.service` to your systemd directory, modify the location of the python script and add any required services (for example mosquitto as dependency)
 
 Enable, start and check the service with
-EEE
-``` sh
+```sh
 systemctl enable hass_raid_status.service
 systemctl start hass_raid_status.service
 systemctl status hass_raid_status.service
@@ -75,9 +74,25 @@ The device can be found under Configuration / Devices ([http://homeassistant.loc
 
 ## Automated Alarm
 
-To trigger any alarm if the raid fails, you can add an automation if the state of the sensor changes from `Clean` or `Active` to another state
+To trigger any alarm if the RAID fails, you can add an automation if the state of the `healthy` binary sensor changes to false.
 
 ### Other States Observed
 
-- Degraded mirrored raid during rebuild `Clean,degraded,recovering`
-- Degraded mirrored raid with missing drive `Clean,degraded`
+- Degraded mirrored RAID during rebuild `Clean,degraded,recovering`
+- Degraded mirrored RAID with missing drive `Clean,degraded`
+
+## TODO
+- containerize
+- improve documentation
+### Add More Sensors
+Largely inspired by [HA_mdadm](https://github.com/LorenzoVasi/HA_mdadm).
+
+- RAID type (e.g., raid1, raid5, etc; unclear if this will be useful after renaming entities)
+- device count
+- devices not working count
+- sync (binary - unclear what this means, look up in HA_mdadm)
+- resync details
+  - current operation
+  - progress (percent)
+  - remaining time
+  - speed

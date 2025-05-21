@@ -1,18 +1,20 @@
 #! /usr/bin/env python3
 
+import argparse
+import atexit
+import copy
+import hashlib
 import json
+import os
+import psutil
+import shutil
 import socket
 import subprocess
-import hashlib
-import copy
-import paho.mqtt.client as mqtt
-import time
-import psutil
-import argparse
-import os
 import sys
-import atexit
-import shutil
+import textwrap
+import time
+
+import paho.mqtt.client as mqtt
 
 parser = argparse.ArgumentParser(description="Check Raid Utility")
 parser.add_argument("-v", "--verbose", help="verbose output", action="store_true", default=False)
@@ -329,14 +331,19 @@ def disconnect_mqtt():
 
 # publish message
 def publish(client, topic, payload):
-    verbose('topic: %s\nmessage: %s' % (topic, payload))
+    verbose(f'topic: {topic}\nmessage: {payload}')
     client.publish(topic, payload=payload, qos=get_qos_value(), retain=True)
 
 # publish config
-def publish_config(client, topic, payload, object_id):
+def publish_config(client, payload, component, node_id, object_id):
     if not isinstance(payload, dict):
-        raise Exception('Invalid config payload topic: %s' % topic)
-    topic = '%s/sensor/%s/%s/config' % (config['hass']['autoconf_topic'], object_id, topic)
+        raise Exception('Invalid config payload topic: %s' % object_id)
+    topic = '%s/%s/%s/%s/config'.format(
+        config['hass']['autoconf_topic'],
+        component,
+        node_id,
+        object_id
+    )
     publish(client, topic, json.dumps(payload))
 
 # connect to MQTT server
@@ -409,14 +416,14 @@ for device in config['devices']:
     device_info['dev']['identifiers'] = [ '%s_%s_%s_%s' % (device_name, raid_level, raid_device, unique_id_dev) ]
     device_info['dev']['name'] = '%s_%s_dev_%s' % (device_name, raid_level, raid_device)
 
-    object_id = '%s_%s_%s' % (device_name, raid_level, raid_device)
+    node_id = '%s_%s_%s' % (device_name, raid_level, raid_device)
 
     # state config / template for all
     device_state = {
         'name': display_device_name,
         'platform': 'mqtt',
         'uniq_id': unique_id_dev,
-        'obj_id': object_id + '_state',
+        'obj_id': node_id + '_state',
         'icon': config['mqtt']['icon']
     }
     device_state.update(topics)
@@ -426,7 +433,7 @@ for device in config['devices']:
     number += 23
     device_healthy = copy.deepcopy(device_state)
     device_healthy['name'] += ' Healthy'
-    device_healthy['obj_id'] = object_id + '_healthy'
+    device_healthy['obj_id'] = node_id + '_healthy'
     device_healthy['uniq_id'] = unique_id + ('%02x' % number)
     device_healthy['stat_t'] = state_topic_base + '/healthy'
 
@@ -434,7 +441,7 @@ for device in config['devices']:
     number += 23
     total_space = copy.deepcopy(device_state)
     total_space['name'] += ' Total Space'
-    total_space['obj_id'] = object_id + '_total'
+    total_space['obj_id'] = node_id + '_total'
     total_space['uniq_id'] = unique_id + ('%02x' % number)
     total_space['stat_t'] = state_topic_base + '/total'
     total_space['unit_of_measurement'] = device['display_unit']
@@ -443,7 +450,7 @@ for device in config['devices']:
     number += 23
     free_space = copy.deepcopy(device_state)
     free_space['name'] += ' Free Space'
-    free_space['obj_id'] = object_id + '_free'
+    free_space['obj_id'] = node_id + '_free'
     free_space['uniq_id'] = unique_id + ('%02x' % number)
     free_space['stat_t'] = state_topic_base + '/free'
     free_space['unit_of_measurement'] = device['display_unit']
@@ -452,7 +459,7 @@ for device in config['devices']:
     number += 23
     free_pct_space = copy.deepcopy(device_state)
     free_pct_space['name'] += ' Free Space Pct'
-    free_pct_space['obj_id'] = object_id + '_free_pct'
+    free_pct_space['obj_id'] = node_id + '_free_pct'
     free_pct_space['uniq_id'] = unique_id + ('%02x' % number)
     free_pct_space['stat_t'] = state_topic_base + '/free_pct'
     free_pct_space['unit_of_measurement'] = '%'
@@ -461,7 +468,7 @@ for device in config['devices']:
     number += 23
     used_space = copy.deepcopy(device_state)
     used_space['name'] += ' Used Space'
-    used_space['obj_id'] = object_id + '_used'
+    used_space['obj_id'] = node_id + '_used'
     used_space['uniq_id'] = unique_id + ('%02x' % number)
     used_space['stat_t'] = state_topic_base + '/used'
     used_space['unit_of_measurement'] = device['display_unit']
@@ -470,14 +477,21 @@ for device in config['devices']:
     device_state['name'] = device_state['name'] + ' State'
 
     # send homeassistant config
-    verbose('state: %s\nhealthy: %s\ndevice: %s\nraid device: %s\nmount point: %s\ndisplay unit: %s' % (raid_state, raid_healthy, device_name, device['raid_device'], device['mount_point'], device['display_unit']))
+    verbose(textwrap.dedent(
+        f'''state: {raid_state}
+        healthy: {raid_healthy}
+        device: {device_name}
+        raid device: {device['raid_device']}
+        mount point: {device['mount_point']}
+        display unit: {device['display_unit']}'''
+    ))
 
-    publish_config(client, 'state', device_state, object_id)
-    publish_config(client, 'healthy', device_healthy, object_id)
-    publish_config(client, 'total_space', total_space, object_id)
-    publish_config(client, 'free_space', free_space, object_id)
-    publish_config(client, 'free_pct_space', free_pct_space, object_id)
-    publish_config(client, 'used_space', used_space, object_id)
+    publish_config(client, device_state, 'sensor', node_id, 'state')
+    publish_config(client, device_healthy, 'binary_sensor', node_id, 'healthy')
+    publish_config(client, total_space, 'sensor', node_id, 'total_space')
+    publish_config(client, free_space, 'sensor', node_id, 'free_space')
+    publish_config(client, free_pct_space, 'sensor', node_id, 'free_pct_space')
+    publish_config(client, used_space, 'sensor', node_id, 'used_space')
 
 # update raid status
 def main_loop(client):

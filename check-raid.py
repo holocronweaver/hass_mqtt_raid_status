@@ -337,8 +337,8 @@ def publish(client, topic, payload):
 # publish config
 def publish_config(client, payload, component, node_id, object_id):
     if not isinstance(payload, dict):
-        raise Exception('Invalid config payload topic: %s' % object_id)
-    topic = '%s/%s/%s/%s/config'.format(
+        raise Exception('Invalid config payload topic: ' + object_id)
+    topic = '{}/{}/{}/{}/config'.format(
         config['hass']['autoconf_topic'],
         component,
         node_id,
@@ -478,7 +478,8 @@ for device in config['devices']:
 
     # send homeassistant config
     verbose(textwrap.dedent(
-        f'''state: {raid_state}
+        f'''\
+        state: {raid_state}
         healthy: {raid_healthy}
         device: {device_name}
         raid device: {device['raid_device']}

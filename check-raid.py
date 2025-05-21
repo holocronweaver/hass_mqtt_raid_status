@@ -6,7 +6,6 @@ import copy
 import hashlib
 import json
 import os
-import psutil
 import shutil
 import socket
 import subprocess
@@ -15,6 +14,7 @@ import textwrap
 import time
 
 import paho.mqtt.client as mqtt
+import psutil
 
 parser = argparse.ArgumentParser(description="Check Raid Utility")
 parser.add_argument("-v", "--verbose", help="verbose output", action="store_true", default=False)
@@ -23,7 +23,6 @@ parser.add_argument("-i", "--interval",
                     help="interval to update the raid status in seconds", type=int, default=900)
 parser.add_argument("-p", "--print",
                     help="print configuration and exit", action="store_true", default=False)
-
 args = parser.parse_args()
 VERBOSE = args.verbose
 
@@ -70,6 +69,7 @@ config = {
     'devices': None,
     'info': {}
 }
+
 try:
     with open(config_file) as file:
         config = dict(config | json.loads(file.read()))
@@ -372,7 +372,6 @@ try:
 except Exception as e:
     error('Failed to connect to MQTT: %s@%s:%d' % (get_mqtt_account(config['mqtt']), config['mqtt']['host'], config['mqtt']['port']), e)
 
-
 # start mqtt client loop
 client.loop_start()
 
@@ -538,8 +537,10 @@ while True:
             except Exception as e:
                 error('Main loop aborted', e)
 
-            verbose('---\nwaiting %d seconds....' % config['sys']['interval'])
+            verbose(f"---\nwaiting {config['sys']['interval']} seconds....")
             state['current_delay'] = config['sys']['interval']
+
+            sys.stdout.flush()
         else:
             state['current_delay'] = 1
 
@@ -551,3 +552,4 @@ while True:
                 break
     except KeyboardInterrupt:
         error('Aborted')
+        sys.stdout.flush()

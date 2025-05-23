@@ -94,12 +94,21 @@ To trigger any alarm if the RAID fails, you can add an automation if the state o
 ### Add More Sensors
 Largely inspired by [HA_mdadm](https://github.com/LorenzoVasi/HA_mdadm).
 
-- RAID type (e.g., raid1, raid5, etc; unclear if this will be useful after renaming entities)
-- device count
-- devices not working count
-- sync (binary - unclear what this means, look up in HA_mdadm)
-- resync details
-  - current operation
-  - progress (percent)
-  - remaining time
-  - speed
+- [x] RAID type (e.g., raid1, raid5, etc; unclear if this will be useful after renaming entities)
+- [x] device count
+- [x] devices not working count
+- [ ] sync (binary - unclear what this means, look up in HA_mdadm)
+- [ ] resync details
+  - [x] current operation
+  - [x] progress (percent)
+  - [ ] remaining time (only in `/proc/mdstat`)
+  - [ ] speed (only in `/proc/mdstat`)
+
+## Notes
+### Device Counts
+raid devices = number meant to be active by design (target active)
+total devices = number meant to be working by design (target working)
+active = current synced devices (ready for I/O, parity, syncing and such)
+spare = current available spares
+working = active (above) + spare (above)
+failed = total - working

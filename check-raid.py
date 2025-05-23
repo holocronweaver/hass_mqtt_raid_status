@@ -384,9 +384,12 @@ for device in config['devices']:
     res = subprocess.run(['blkid', '-o', 'value', device['raid_device']], capture_output=True)
     unique_id = hashlib.sha256(res.stdout).hexdigest()[:12]
 
+    raid_target_active_device_count = None
+    raid_failed_device_count = None
     raid_state = None
     raid_healthy = None
     raid_level = None
+    raid_resync_progress_percentage = None
     raid_device = device['raid_device'].split('/').pop()
 
     args = mdadm_cmd(['--misc', '--detail', device['raid_device']])
@@ -404,6 +407,14 @@ for device in config['devices']:
             elif key == 'state':
                 raid_state = value.capitalize()
                 raid_healthy = raid_state in ('Active', 'Clean')
+            elif key == 'raid_devices':
+                raid_target_active_device_count = int(value)
+            elif key == 'active_devices':
+                raid_active_device_count = int(value)
+            elif key == 'failed_devices':
+                raid_failed_device_count = int(value)
+            elif key == 'resync_status':
+                raid_resync_progress_percentage = int(value.split('%')[0])
 
     display_device_name = '%s %s %s' % (device_name.capitalize(), raid_level.capitalize(), device['raid_device'])
     unique_id_dev = unique_id + ('%02x' % number)
